@@ -1,0 +1,137 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: routeiq
+      POSTGRES_USER: routeiq
+      POSTGRES_PASSWORD: routeiq_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - routeiq-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U routeiq"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7.4-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - routeiq-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  osrm:
+    build:
+      context: ./osrm
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - osrm-data:/data
+    networks:
+      - routeiq-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/nearest/v1/driving/30.52,50.45 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://routeiq:routeiq_secret@postgres:5432/routeiq
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: dev-secret-key-change-in-production
+      OSRM_URL: http://osrm:5000
+      OPENWEATHER_API_KEY: dev-secret-key-change-in-production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    networks:
+      - routeiq-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8001:8001"
+    volumes:
+      - ml-models:/app/saved_models
+      - ./ml-service/app:/app/app
+    networks:
+      - routeiq-net
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/docs')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  nginx:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - routeiq-net
+    depends_on:
+      - backend
+
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    environment:
+      BACKEND_URL: http://backend:8000
+      OSRM_URL: http://osrm:5000
+      SIM_AGENTS: ${SIM_AGENTS:-5}
+      SIM_DURATION: ${SIM_DURATION:-0}
+      SIM_INCIDENT_RATE: ${SIM_INCIDENT_RATE:-0.3}
+      SIM_TELEMETRY_INTERVAL: ${SIM_TELEMETRY_INTERVAL:-1}
+    volumes:
+      - ./simulator/app:/simulator/app
+    networks:
+      - routeiq-net
+    depends_on:
+      backend:
+        condition: service_started
+      osrm:
+        condition: service_healthy
+    profiles:
+      - simulation
+
+volumes:
+  pgdata:
+  redis-data:
+  ml-models:
+  osrm-data:
+
+networks:
+  routeiq-net:
+    driver: bridge

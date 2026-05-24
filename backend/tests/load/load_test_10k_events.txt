@@ -1,0 +1,32 @@
+============================================================
+НФВ-4 LIVE BENCHMARK — 10×10000 events to stream:telemetry
+============================================================
+  stream:telemetry length before: 32802
+
+round   events    time, s   events/sec     
+---------------------------------------------
+1       10000     0.189     52816          
+2       10000     0.162     61637          
+3       10000     0.216     46383          
+4       10000     0.213     46873          
+5       10000     0.169     59252          
+6       10000     0.194     51663          
+7       10000     0.153     65280          
+8       10000     0.178     56162          
+9       10000     0.174     57547          
+10      10000     0.251     39829          
+
+  stream:telemetry length after:  132921
+  delta (events added):           100119
+
+SUMMARY
+---------------------------------------------
+  min throughput :      39829 events/sec
+  avg throughput :      53744 events/sec
+  max throughput :      65280 events/sec
+  median         :      54489 events/sec
+  total events   : 100000
+  total wall time:      1.899 s
+
+  НФВ-4 (avg ≥ 10k/s): ✅ PASS
+============================================================

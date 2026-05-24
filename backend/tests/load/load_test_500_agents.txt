@@ -1,0 +1,31 @@
+======================================================================
+НФВ-3 LIVE BENCHMARK — 500 agents × 120s
+======================================================================
+logged in as admin@routeiq.com
+creating 500 vehicles...
+  created 500/500 in 6.0s
+
+starting telemetry loops (interval=5.0s)...
+  t= 10s  n=  985  avg=  58.7ms  p50=  56.1ms  p95=  78.0ms  p99= 107.9ms  cpu=  0.3%  mem= 102.2MiB  active=500
+  t= 21s  n=  748  avg=1816.0ms  p50=1294.2ms  p95=5156.7ms  p99=7312.4ms  cpu=  0.3%  mem= 102.2MiB  active=500
+  t= 32s  n=  757  avg=2483.5ms  p50=1922.0ms  p95=7038.0ms  p99=11138.9ms  cpu=  0.3%  mem= 102.4MiB  active=500
+  t= 47s  n=  953  avg=2311.2ms  p50=1672.4ms  p95=6700.4ms  p99=10461.3ms  cpu=  0.3%  mem= 102.0MiB  active=500
+  t= 59s  n=  729  avg=3035.1ms  p50=2333.3ms  p95=8046.9ms  p99=10384.4ms  cpu=  0.3%  mem= 102.2MiB  active=500
+  t= 75s  n= 1133  avg=2181.2ms  p50=1517.3ms  p95=6492.8ms  p99=10386.4ms  cpu=  0.3%  mem= 102.0MiB  active=500
+  t= 90s  n= 1095  avg=1858.6ms  p50=1314.7ms  p95=5268.7ms  p99=8081.1ms  cpu=  0.3%  mem= 102.0MiB  active=500
+  t=106s  n= 1117  avg=2130.1ms  p50=1557.0ms  p95=6038.2ms  p99=8795.7ms  cpu=  0.8%  mem= 102.2MiB  active=500
+  t=121s  n=  914  avg=2929.1ms  p50=2223.7ms  p95=8282.4ms  p99=11098.6ms  cpu=  0.3%  mem= 102.2MiB  active=500
+
+======================================================================
+SUMMARY
+======================================================================
+  agents created : 500
+  duration       : 120s
+  total telemetry: 8431 (70/s)
+  avg latency    : 2089.3ms
+  avg p95        : 5900.2ms
+  max p95        : 8282.4ms
+  max p99        : 11138.9ms
+  НФВ-1 (p95<3s) : ❌ FAIL
+  НФВ-3 (500agt) : ✅ PASS
+======================================================================

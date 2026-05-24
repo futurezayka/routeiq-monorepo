@@ -1,0 +1,16 @@
+{
+  "precision": 0.7469135802469136,
+  "recall": 0.8066666666666666,
+  "f1": 0.7756410256410257,
+  "test_samples": 28800,
+  "anomalies_in_test": 150,
+  "predicted_anomalies": 162,
+  "n_estimators": 300,
+  "contamination": 0.006,
+  "features": [
+    "speed_kmh",
+    "speed_ratio",
+    "speed_zscore",
+    "rel_to_segment"
+  ]
+}

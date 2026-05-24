@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RouteIQ — Fleet Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap"
+    />
+    <style>
+      :root {
+        /* Legacy tokens — keep until all inline styles migrate to new ones. */
+        --bg-deep: #0F1117;
+        --bg-surface: #1A1D27;
+        --bg-elevated: #242736;
+        --accent: #6366F1;
+        --success: #22C55E;
+        --warning: #F59E0B;
+        --danger: #EF4444;
+        --text-primary: #F1F5F9;
+        --text-secondary: #94A3B8;
+        --border: rgba(255,255,255,0.06);
+
+        /* Linear-style dashboard chrome tokens (linear.app design system). */
+        --bg-base:        #0A0A0B;
+        --bg-surface-1:   #121215;
+        --bg-surface-2:   #18181B;
+        --bg-surface-3:   #27272A;
+        --border-subtle:  #23252A;
+        --border-strong:  #383B3F;
+        --text-tertiary:  #8A8F98;   /* Linear "Storm Cloud"  */
+        --text-disabled:  #62666D;   /* Linear "Fog Grey"     */
+
+        /* Selection accent — teal-300, "selection only" per spec. */
+        --accent-primary: #5EEAD4;
+        --accent-route-bg: #60A5FA;
+        --accent-reroute:  #FBBF24;
+
+        /* Mapbox traffic palette (mapbox/mapbox-plugins-android TrafficColor) */
+        --traffic-low:      #39C66D;
+        --traffic-moderate: #FF8C1A;
+        --traffic-heavy:    #FF0015;
+        --traffic-severe:   #981B25;
+        --traffic-low-dim:      #059441;
+        --traffic-moderate-dim: #D66B00;
+        --traffic-heavy-dim:    #BD0010;
+        --traffic-severe-dim:   #5F1117;
+
+        /* Typography scale (Linear) */
+        --type-body:        14px;
+        --type-meta:        12px;
+        --type-pill:        11px;
+        --weight-heading:   510;
+        --weight-numeric:   500;
+        --weight-body:      400;
+      }
+
+      body { margin: 0; background: var(--bg-deep); }
+
+      @keyframes livePulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
+      }
+
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,140,26,0.6); }
+        50% { transform: scale(1.05); box-shadow: 0 0 0 4px rgba(255,140,26,0); }
+      }
+
+      /* Incident pulse: ring expands from marker — drives high/critical
+         severities. 3 cycles × 1500 ms then CSS keeps it idle. */
+      @keyframes incidentPulse {
+        0%   { transform: scale(1);   opacity: 0.65; }
+        100% { transform: scale(2.4); opacity: 0; }
+      }
+
+      .leaflet-container {
+        font-family: 'Inter', sans-serif;
+        background: #0E0E0E !important; /* CARTO Dark Matter base */
+      }
+      .leaflet-tile-pane { will-change: transform; }
+      .leaflet-tile {
+        transition: opacity 0.15s ease-in !important;
+      }
+
+      .leaflet-popup-content-wrapper {
+        background: var(--bg-surface) !important;
+        color: var(--text-primary) !important;
+        border-radius: 10px !important;
+        border: 1px solid var(--border) !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+      }
+      .leaflet-popup-content { margin: 10px 14px !important; }
+      .leaflet-popup-tip { background: var(--bg-surface) !important; }
+      .leaflet-fade-anim .leaflet-popup {
+        transition: opacity 0.12s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      }
+
+      /* Tooltip: dark, compact, no tail. Used for hover-level summaries. */
+      .leaflet-tooltip {
+        background: var(--bg-surface-2) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 6px !important;
+        padding: 6px 10px !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: var(--type-meta) !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+        white-space: nowrap;
+      }
+      .leaflet-tooltip-top:before,
+      .leaflet-tooltip-bottom:before,
+      .leaflet-tooltip-left:before,
+      .leaflet-tooltip-right:before { display: none !important; }
+
+      .riq-tip__row {
+        display: flex; align-items: center; gap: 8px;
+      }
+      .riq-tip__row + .riq-tip__row { margin-top: 2px; color: var(--text-tertiary); }
+      .riq-tip__id {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: var(--weight-heading);
+        font-size: var(--type-body);
+      }
+      .riq-tip__pill {
+        font-size: var(--type-pill);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+      .riq-tip__num { font-variant-numeric: tabular-nums; font-weight: var(--weight-numeric); }
+
+      .incident-marker {
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid #0E0E0E;
+        position: relative;
+      }
+      .incident-low      { background: var(--traffic-low);      }
+      .incident-medium   { background: var(--traffic-moderate); }
+      .incident-high     { background: var(--traffic-heavy);
+                           box-shadow: 0 0 6px rgba(255,0,21,0.45); }
+      .incident-critical { background: var(--traffic-severe);
+                           box-shadow: 0 0 8px rgba(152,27,37,0.6); }
+      /* Pulse halo for high/critical — purely CSS, no JS RAF. */
+      .incident-high::after,
+      .incident-critical::after {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        color: var(--traffic-heavy);
+        animation: incidentPulse 1.5s ease-out infinite;
+        pointer-events: none;
+      }
+      .incident-critical::after { color: var(--traffic-severe); }
+
+      .vehicle-dot {
+        transition: transform 1s linear !important;
+      }
+      .leaflet-zoom-anim .vehicle-dot {
+        transition: none !important;
+      }
+
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
