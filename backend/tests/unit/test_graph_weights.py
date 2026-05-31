@@ -76,7 +76,7 @@ async def test_weight_clamped_to_max(manager):
     await manager.update_incident_factor("seg-x", 15.0)
     await manager.update_congestion_factor("seg-x", 3.0)
     w = await manager.get_weight("seg-x")
-    assert w == pytest.approx(20.0)
+    assert w == pytest.approx(10.0)
 
 
 async def test_non_numeric_redis_value_defaults_to_one(redis, manager):

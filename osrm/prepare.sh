@@ -11,13 +11,16 @@ if [ -f "$OSRM_FILE.fileIndex" ]; then
   exit 0
 fi
 
-echo "[osrm-prepare] Downloading Kyiv region extract (~30 MB)…"
+echo "[osrm-prepare] Downloading Kyiv region extract…"
 wget --no-check-certificate -O "$PBF_FILE" \
-  "https://download.bbbike.org/osm/bbbike/Kyiv/Kyiv.osm.pbf" || {
-    echo "[osrm-prepare] BBBike download failed, trying Geofabrik Ukraine extract…"
-    wget --no-check-certificate -O "$PBF_FILE" \
-      "https://download.geofabrik.de/europe/ukraine-latest.osm.pbf"
-  }
+  "https://download.bbbike.org/osm/bbbike/Kyiv/Kyiv.osm.pbf" 2>/dev/null
+
+FILE_SIZE=$(stat -c%s "$PBF_FILE" 2>/dev/null || echo 0)
+if [ "$FILE_SIZE" -lt 100000 ]; then
+  echo "[osrm-prepare] BBBike failed (${FILE_SIZE}B), trying Geofabrik…"
+  wget --no-check-certificate -O "$PBF_FILE" \
+    "https://download.geofabrik.de/europe/ukraine-latest.osm.pbf"
+fi
 
 echo "[osrm-prepare] Extracting (MLD algorithm)…"
 osrm-extract -p "$PROFILE" "$PBF_FILE"
